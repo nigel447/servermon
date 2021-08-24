@@ -11,10 +11,11 @@ import (
 )
 
 func main() {
+	InitConfig()  
 	c := make(chan os.Signal)
 	signal.Notify(c,  os.Interrupt, syscall.SIGTERM)
 	ctx, cancel := context.WithCancel(context.Background())
-	client := sshclient.Client{ Addr: "localhost:2222" }
+	client := sshclient.Client{ Addr: config.Address }
 	fmt.Println("calling bootstap on", client.Addr)
 	go func(){
 		// recieve signal
