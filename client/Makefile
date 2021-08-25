@@ -10,6 +10,7 @@ build:
 
 clean:
 	go clean
+	go fmt ./...
 	rm -f $(BINARY)
 
  
