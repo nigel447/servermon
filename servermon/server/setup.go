@@ -6,6 +6,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"os"
 	"srvmon/dcrypto"
+	"sync/atomic"
 )
 
 func (srv *Server) BootStrapServer(ctx context.Context) {
@@ -24,6 +25,7 @@ func (srv *Server) BootStrapServer(ctx context.Context) {
 	}()
 
 	for {
+		atomic.AddUint64(&mainServerLoopCount, 1)
 		conn, e := l.Accept()
 		if e != nil {
 			select {
@@ -43,28 +45,53 @@ func (srv *Server) BootStrapServer(ctx context.Context) {
 		fmt.Println("we have a ssh connecion ", sshConn.RemoteAddr().String())
 		// fmt.Println("we have a base64 encoding for client's public  key ", srv.ClienPublicKey)
 		go srv.handleRequests(reqs)
+
 		for ch := range chans {
-			ctype := ch.ChannelType()
+			//ctype := ch.ChannelType()
 			channel, requests, err := ch.Accept()
 			if err != nil {
 				fmt.Println("could not accept channel ", err)
 			}
+			fmt.Printf("accept channel %s\n", ch.ChannelType())
 			go ssh.DiscardRequests(requests)
 
-			buff := make([]byte, 256)
-
-			for {
-				n, err := channel.Read(buff)
-				if err != nil {
-					break
+			go func(channel ssh.Channel) {
+				for {
+					buff := make([]byte, 256)
+					fmt.Println("server listening for incomming channel mssgs")
+					n, err := channel.Read(buff)
+					if err != nil {
+						break
+					}
+					b := buff[:n]
+					fmt.Println("incomming channel mssg ", string(b))
+					// start profiling
+					RunProfiler()
 				}
-				b := buff[:n]
-				fmt.Printf("[%s]\n%s", ctype, string(b))
-			}
+			}(channel)
+
+			// buff := make([]byte, 256)
+
+			// _, err := channel.Read(buff)
+			// if err != nil {
+			// 	break
+			// }
+			// b := buff[:n]
+			// fmt.Printf("[%s]\n%s", ctype, string(b))
+			// ret := fmt.Sprintf("send rpc result for request [%s]\n", string(b))
+			// channel.Write([]byte(ret))
+
+			go func(channel ssh.Channel) {
+				fmt.Println("server sending system profile data")
+				for {
+					data := <-ProfileDataCh
+					fmt.Printf("sending data\nschedluer run count %d server loop count %d\n", sheduerCount, mainServerLoopCount)
+					channel.Write([]byte(data))
+				}
+			}(channel)
 
 		}
 	}
-
 }
 
 func (srv *Server) getServerConfig() {

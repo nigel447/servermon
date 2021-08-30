@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"net"
 	"os"
-	"time"
+	//"time"
 )
 
 func (cli *Client) BootStrapClient(ctx context.Context) {
@@ -22,24 +22,26 @@ func (cli *Client) BootStrapClient(ctx context.Context) {
 	conn, err := ssh.Dial("tcp", cli.Addr, cli.config)
 	handleError(err)
 	defer conn.Close()
-	go func() {
+	channel, requests, err := conn.OpenChannel("rpc-remote", s("%s extra data", "init string"))
+	go func(channel ssh.Channel) {
 		fmt.Println("BootStrapClient opening a channel")
-		channel, requests, err := conn.OpenChannel("rpc-remote", s("%s extra data", "init string"))
 		handleError(err)
 		go ssh.DiscardRequests(requests)
-		//test send data
-		n := 1
+		_, err := channel.Write(s("send statrt profiler on out data channel"))
+		handleError(err)
+	}(channel)
+
+	go func(channel ssh.Channel) {
+		buff := make([]byte, 256)
 		for {
-			_, err := channel.Write(s("#%d send data channel", n))
-			handleError(err)
-			n++
-			time.Sleep(3 * time.Second)
-			if n > 3 {
+			n, err := channel.Read(buff)
+			if err != nil {
 				break
 			}
+			b := buff[:n]
+			fmt.Printf("%s\n", string(b))
 		}
-	}()
-	// block
+	}(channel)
 	<-ctx.Done()
 }
 
