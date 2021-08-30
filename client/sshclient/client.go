@@ -8,10 +8,14 @@ import (
 	"golang.org/x/crypto/ssh"
 	"net"
 	"os"
-	//"time"
+	"sync/atomic"
+	"time"
 )
 
+var dataCount uint64
+
 func (cli *Client) BootStrapClient(ctx context.Context) {
+
 	cli.getClientConfig()
 	go func() {
 		// recieve cancel mssg
@@ -27,7 +31,10 @@ func (cli *Client) BootStrapClient(ctx context.Context) {
 		fmt.Println("BootStrapClient opening a channel")
 		handleError(err)
 		go ssh.DiscardRequests(requests)
-		_, err := channel.Write(s("send statrt profiler on out data channel"))
+		_, err := channel.Write(s("start"))
+		handleError(err)
+		time.Sleep(20 * time.Second)
+		_, err = channel.Write(s("stop"))
 		handleError(err)
 	}(channel)
 
@@ -39,7 +46,9 @@ func (cli *Client) BootStrapClient(ctx context.Context) {
 				break
 			}
 			b := buff[:n]
-			fmt.Printf("%s\n", string(b))
+			fmt.Println(string(b))
+			fmt.Println("recieved data count ", dataCount)
+			atomic.AddUint64(&dataCount, 1)
 		}
 	}(channel)
 	<-ctx.Done()

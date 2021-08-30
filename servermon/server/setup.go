@@ -65,21 +65,18 @@ func (srv *Server) BootStrapServer(ctx context.Context) {
 					}
 					b := buff[:n]
 					fmt.Println("incomming channel mssg ", string(b))
-					// start profiling
-					RunProfiler()
+					if string(b) == "start" {
+						// start profiling
+						RunProfiler()
+					}
+
+					if string(b) == "stop" {
+						// stop profiling
+						StopProfiler()
+					}
+
 				}
 			}(channel)
-
-			// buff := make([]byte, 256)
-
-			// _, err := channel.Read(buff)
-			// if err != nil {
-			// 	break
-			// }
-			// b := buff[:n]
-			// fmt.Printf("[%s]\n%s", ctype, string(b))
-			// ret := fmt.Sprintf("send rpc result for request [%s]\n", string(b))
-			// channel.Write([]byte(ret))
 
 			go func(channel ssh.Channel) {
 				fmt.Println("server sending system profile data")

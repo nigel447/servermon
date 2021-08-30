@@ -7,7 +7,7 @@ import (
 )
 
 func RunProfiler() {
-	s := gocron.NewScheduler(time.UTC)
+	sheduer = gocron.NewScheduler(time.UTC)
 	// job, _ := s.Every(5).Second().Do(task)
 	// go func() {
 	// 	for {
@@ -16,6 +16,10 @@ func RunProfiler() {
 	// 	}
 	// }()
 
-	s.Every(5).Second().Do(task)
-	s.StartAsync()
+	sheduer.Every(5).Second().Do(task)
+	sheduer.StartAsync()
+}
+
+func StopProfiler() {
+	sheduer.Stop()
 }
