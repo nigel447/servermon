@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	//"sync"
+	"github.com/go-co-op/gocron"
 	"sync/atomic"
 )
 
@@ -30,6 +31,7 @@ type (
 var (
 	lc net.ListenConfig
 	//formatter = "%-14s %7s %7s %7s %4s %s\n"
+	scheduler           *gocron.Scheduler
 	sheduerCount        uint64
 	mainServerLoopCount uint64
 	//wg            sync.WaitGroup
