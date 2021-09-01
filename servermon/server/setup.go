@@ -82,8 +82,10 @@ func (srv *Server) BootStrapServer(ctx context.Context) {
 				fmt.Println("server sending system profile data")
 				for {
 					data := <-ProfileDataCh
+
 					fmt.Printf("sending data\nschedluer run count %d server loop count %d\n", sheduerCount, mainServerLoopCount)
-					channel.Write([]byte(data))
+					fmt.Printf("sending data\n%s\n", string(data))
+					channel.Write(data)
 				}
 			}(channel)
 

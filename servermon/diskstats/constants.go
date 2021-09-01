@@ -32,12 +32,17 @@ type (
 	}
 
 	DiskFreeSpace struct {
-		Total      string `json:"totalDisk"`
-		Used       string `json:"usedDisk"`
-		Free       string `json:"freeDisk"`
-		FsType     string `json:"typeDisk"`
-		Percent    string `json:"percentDisk"`
-		Mountpoint string `json:"mountDisk"`
+		Total      string `json:"total"`
+		Used       string `json:"used"`
+		Free       string `json:"free"`
+		FsType     string `json:"fs"`
+		Percent    string `json:"pct"`
+		Mountpoint string `json:"mt"`
+	}
+
+	DiskRet struct {
+		RType string        `json:"type"`
+		Data  DiskFreeSpace `json:"data"`
 	}
 )
 

@@ -11,6 +11,7 @@ import (
 
 func main() {
 	InitConfig()
+
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -23,5 +24,6 @@ func main() {
 		cancel()
 
 	}()
-	client.BootStrapClient(ctx)
+	go client.BootStrapClient(ctx)
+
 }

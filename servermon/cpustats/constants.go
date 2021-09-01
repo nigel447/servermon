@@ -16,9 +16,10 @@ type (
 	}
 
 	CpuRangeData struct {
-		UserSpace string `json:"userMem"`
-		System    string `json:"sysMem"`
-		Idle      string `json:"idleMem"`
+		RType     string `json:"type"`
+		UserSpace string `json:"user"`
+		System    string `json:"sys"`
+		Idle      string `json:"idle"`
 	}
 )
 

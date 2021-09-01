@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"time"
 	//"fmt"
 	"net"
 	"srvmon/cpustats"
@@ -10,8 +11,9 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	//"sync"
-	"github.com/go-co-op/gocron"
 	"sync/atomic"
+
+	"github.com/go-co-op/gocron"
 )
 
 type (
@@ -19,12 +21,6 @@ type (
 		Addr           string
 		ClienPublicKey ssh.PublicKey
 		config         *ssh.ServerConfig
-	}
-
-	ProfileData struct {
-		CpuPoint  cpustats.CpuRangeData     `json:"cpu"`
-		MemPoint  memstats.MemRangeData     `json:"mem"`
-		DiskPoint []diskstats.DiskFreeSpace `json:"disk"`
 	}
 )
 
@@ -35,16 +31,32 @@ var (
 	sheduerCount        uint64
 	mainServerLoopCount uint64
 	//wg            sync.WaitGroup
-	ProfileDataCh = make(chan string, 1)
+	ProfileDataCh = make(chan []byte, 1)
 
 	task = func() {
-		data := ProfileData{}
-		data.CpuPoint = *cpustats.GetCpuPercent()
-		data.MemPoint = *memstats.GetMemGb()
-		data.DiskPoint = diskstats.GetDiskSpace()
-		jBytes, err := json.Marshal(data)
+		CpuPoint := *cpustats.GetCpuPercent()
+		MemPoint := *memstats.GetMemGb()
+		DiskPoint := diskstats.GetDiskSpace()
+		CpuPoint.RType = "cpu"
+		jBytes, err := json.Marshal(CpuPoint)
 		handleError(err)
-		ProfileDataCh <- string(jBytes)
+		ProfileDataCh <- jBytes
+		time.Sleep(200 * time.Millisecond)
+		MemPoint.RType = "mem"
+		jBytes, err = json.Marshal(MemPoint)
+		handleError(err)
+		ProfileDataCh <- jBytes
+		time.Sleep(200 * time.Millisecond)
+		for _, dsk := range DiskPoint {
+			d := diskstats.DiskRet{
+				RType: "disk",
+				Data:  dsk,
+			}
+			jBytes, err = json.Marshal(d)
+			handleError(err)
+			ProfileDataCh <- jBytes
+			time.Sleep(200 * time.Millisecond)
+		}
 		atomic.AddUint64(&sheduerCount, 1)
 	}
 )

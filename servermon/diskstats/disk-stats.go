@@ -56,13 +56,12 @@ func GetDiskSpace() (df []DiskFreeSpace) {
 	for _, p := range parts {
 		device := p.Mountpoint
 		s, _ := disk.Usage(device)
-
 		if s.Total == 0 {
 			continue
 		}
 
-		percent := fmt.Sprintf("%2.f%%", s.UsedPercent)
 		if (s.Fstype != "squashfs") && (s.Fstype != "msdos") {
+			percent := fmt.Sprintf("%2.f%%", s.UsedPercent)
 			df = append(df, DiskFreeSpace{
 				FsType:     s.Fstype,
 				Total:      human.Bytes(s.Total),

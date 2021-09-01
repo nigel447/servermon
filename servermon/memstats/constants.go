@@ -13,6 +13,7 @@ type (
 	}
 
 	MemRangeData struct {
+		RType  string `json:"type"`
 		Total  string `json:"totalMem"`
 		Used   string `json:"usedMem"`
 		Cached string `json:"cachedMem"`
