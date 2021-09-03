@@ -1,3 +1,4 @@
 # https://linuxize.com/post/gitignore-ignoring-files-in-git/
 zip
 info.txt
+/fyne_layoutIdea.png
