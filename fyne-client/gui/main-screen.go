@@ -82,6 +82,9 @@ func MetricsDisplay(data map[string]interface{}) (s *fyne.Container) {
 	// dsk ect ...
 	// each meter will havetext blck beow summary
 	fmt.Println("begin switch on type ", dataType)
+	cpuText.Wrapping = fyne.TextWrapWord
+	memText.Wrapping = fyne.TextWrapWord
+	diskText.Wrapping = fyne.TextWrapWord
 	switch dataType {
 	case "cpu":
 		total := aggregateCpuValue(data)
@@ -97,11 +100,12 @@ func MetricsDisplay(data map[string]interface{}) (s *fyne.Container) {
 	}
 
 	meterSize := fyne.NewSize(float32(screenSize.Width/4), float32(screenSize.Width/4))
-	panelLeft := container.New(layout.NewGridLayoutWithRows(3), cpuText, memText, diskText)
-	panelLeft.Resize(panelSize)
-	panelRight := container.New(layout.NewVBoxLayout(), meter.Show(meterSize))
-	panelRight.Resize(panelSize)
-	return container.New(layout.NewGridLayoutWithColumns(2), panelLeft, panelRight)
+
+	col1 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize), cpuText)
+	col2 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize), memText)
+	col3 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize), diskText)
+
+	return container.New(layout.NewGridLayoutWithColumns(3), col1, col2, col3)
 
 }
 

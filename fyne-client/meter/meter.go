@@ -113,7 +113,6 @@ func (meter *MeterLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return minSize
 }
 
-// Show loads a clock example window for the specified app context
 func Show(meterSize fyne.Size) fyne.CanvasObject {
 	minSize = meterSize
 	meter := &MeterLayout{dataValf64: 20, header: "Cpu"}
