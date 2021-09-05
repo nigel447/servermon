@@ -1,11 +1,10 @@
 package gui
 
 import (
+	"fmt"
 	"golang.org/x/exp/shiny/driver"
 	"golang.org/x/exp/shiny/screen"
 	"golang.org/x/mobile/event/size"
-
-	"fmt"
 )
 
 type (

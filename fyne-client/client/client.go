@@ -62,7 +62,7 @@ func (cli *Client) BootStrapClient(ctx context.Context) {
 			b := buff[:n]
 			fmt.Println("data coming in")
 			fmt.Println(string(b))
-			// should blok and wait for data
+			// should block and wait for data
 			gui.DataPipe <- b
 			fmt.Println("recieved data count ", dataCount)
 			atomic.AddUint64(&dataCount, 1)

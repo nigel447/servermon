@@ -3,6 +3,8 @@ package gui
 import (
 	"encoding/json"
 	"fmt"
+	"fyne-client/meter"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -15,6 +17,7 @@ var Slot *fyne.Container
 var Start, Stop *widget.Button
 
 var winFU fyne.Window
+var screenSize, panelSize fyne.Size
 
 var cpuText = widget.NewMultiLineEntry()
 var memText = widget.NewMultiLineEntry()
@@ -26,6 +29,9 @@ func initSlot() {
 
 func MainScreen(win fyne.Window, screenDims [2]int) {
 	winFU = win
+	screenSize = fyne.NewSize(float32(screenDims[0]), float32(screenDims[1]))
+	panelSize = fyne.NewSize(float32(screenDims[0]/2), float32(screenDims[1]/2))
+
 	initSlot()
 	header := container.New(layout.NewPaddedLayout(), createHeaderButtons())
 	mainScreen := container.New(layout.NewPaddedLayout(), Slot)
@@ -70,9 +76,16 @@ func toggleStartStopImportance(bType string) {
 
 func MetricsDisplay(data map[string]interface{}) (s *fyne.Container) {
 	dataType := data["type"]
-
+	// create meter widgets here
+	// cpu total = usp +sys+idle then => [0, 60] snd to meter Show
+	// mem total then => [0, 60] snd to meter Show
+	// dsk ect ...
+	// each meter will havetext blck beow summary
+	fmt.Println("begin switch on type ", dataType)
 	switch dataType {
 	case "cpu":
+		total := aggregateCpuValue(data)
+		fmt.Println("total cpu ", total)
 		cpuText.SetText(fmt.Sprintf("CPU: userspace %s, system %s, idle %s", data["user"], data["sys"], data["idle"]))
 	case "mem":
 		memText.SetText(fmt.Sprintf("Mem: total %s, used %s, cached %s, free %s",
@@ -82,19 +95,30 @@ func MetricsDisplay(data map[string]interface{}) (s *fyne.Container) {
 		diskText.SetText(fmt.Sprintf("Disk: total %s, used %s, free %s, fs %s,pct %s, mt %s",
 			sData["total"], sData["used"], sData["free"], sData["fs"], sData["pct"], sData["mt"]))
 	}
-	return container.New(
-		layout.NewVBoxLayout(),
-		container.New(layout.NewPaddedLayout(), cpuText),
-		container.New(layout.NewPaddedLayout(), memText),
-		container.New(layout.NewPaddedLayout(), diskText))
+
+	meterSize := fyne.NewSize(float32(screenSize.Width/4), float32(screenSize.Width/4))
+	panelLeft := container.New(layout.NewGridLayoutWithRows(3), cpuText, memText, diskText)
+	panelLeft.Resize(panelSize)
+	panelRight := container.New(layout.NewVBoxLayout(), meter.Show(meterSize))
+	panelRight.Resize(panelSize)
+	return container.New(layout.NewGridLayoutWithColumns(2), panelLeft, panelRight)
+
+}
+
+func aggregateCpuValue(data map[string]interface{}) float64 {
+	user, err := strconv.ParseFloat(data["user"].(string), 64)
+	handleError(err)
+	sys, err := strconv.ParseFloat(data["sys"].(string), 64)
+	handleError(err)
+	idle, err := strconv.ParseFloat(data["idle"].(string), 64)
+	handleError(err)
+	return user + sys + idle
 
 }
 
 func SetSlot(s *fyne.Container) {
-	Slot = container.New(layout.NewPaddedLayout(), s)
 	header := container.New(layout.NewPaddedLayout(), createHeaderButtons())
-	mainScreen := container.New(layout.NewPaddedLayout(), Slot)
-	content := container.New(layout.NewVBoxLayout(), header, mainScreen)
+	content := container.New(layout.NewVBoxLayout(), header, s)
 	winFU.SetContent(content)
 }
 
