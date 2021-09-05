@@ -3,10 +3,10 @@ package meter
 import (
 	"fmt"
 	"math"
-	"time"
+	//"time"
 
 	"image/color"
-	"math/rand"
+	//"math/rand"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -17,6 +17,7 @@ import (
 )
 
 var minSize fyne.Size
+var dataPipe = make(chan float64, 1)
 
 func (meter *MeterLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	meter.boxPad = float32(40)
@@ -113,22 +114,20 @@ func (meter *MeterLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return minSize
 }
 
-func Show(meterSize fyne.Size, headerStr string) fyne.CanvasObject {
+func Show(meterSize fyne.Size, headerStr string, inData <-chan float64) fyne.CanvasObject {
 	minSize = meterSize
 	meter := &MeterLayout{dataValf64: 20, header: headerStr}
 	meter.dataInput = make(chan float64, 10)
 	content := meter.render()
 	meter.value.Set("0")
 
-	go func(m *MeterLayout) {
+	go func(m *MeterLayout, dataPipe <-chan float64) {
 		for {
-			rand.Seed(time.Now().UnixNano())
-			dVal := 0 + rand.Intn(59)
-			meter.dataInput <- float64(dVal)
-			time.Sleep(5 * time.Second)
+			dVal := <-dataPipe
+			meter.dataInput <- dVal
 		}
 
-	}(meter)
+	}(meter, inData)
 
 	go func(chan float64, *fyne.Container) {
 		for {

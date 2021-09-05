@@ -36,9 +36,9 @@ func updateSlot() {
 	memText = widget.NewLabelWithData(valueMem)
 	diskText = widget.NewLabelWithData(valueDisk)
 	meterSize := fyne.NewSize(float32(screenSize.Width/4), float32(screenSize.Width/4))
-	col1 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize, "Cpu"), cpuText)
-	col2 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize, "Memory"), memText)
-	col3 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize, "Disk"), diskText)
+	col1 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize, "Cpu", CpuPipe), cpuText)
+	col2 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize, "Memory", MemPipe), memText)
+	col3 := container.New(layout.NewVBoxLayout(), meter.Show(meterSize, "Disk", DiskPipe), diskText)
 	Slot = container.New(layout.NewGridLayoutWithColumns(3), col1, col2, col3)
 }
 
@@ -97,17 +97,14 @@ func MetricsDisplay(data map[string]interface{}) {
 
 	switch dataType {
 	case "cpu":
-		total := agregateCpuValue(data)
-		fmt.Println("used cpu ", total)
+		CpuPipe <- agregateCpuValue(data)
 		valueCPU.Set(fmt.Sprintf("user %s, sys %s, \nidle %s", data["user"], data["sys"], data["idle"]))
 	case "mem":
-		total := agregateUsedMemValue(data)
-		fmt.Println("used mem ", total)
+		MemPipe <- agregateUsedMemValue(data)
 		valueMem.Set(fmt.Sprintf("total %s, used %s, \ncached %s, free %s",
 			data["totalMem"], data["usedMem"], data["cachedMem"], data["freeMem"]))
 	case "disk":
-		total := agregateDiskValue(data["data"].(map[string]interface{}))
-		fmt.Println("used disk ", total)
+		DiskPipe <- agregateDiskValue(data["data"].(map[string]interface{}))
 		sData := data["data"].(map[string]interface{}) // data here is raw json
 		valueDisk.Set(fmt.Sprintf("total %s, used %s, free %s, \nfs %s, pct %s, mt %s",
 			sData["total"], sData["used"], sData["free"], sData["fs"], sData["pct"], sData["mt"]))

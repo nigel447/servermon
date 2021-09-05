@@ -42,6 +42,9 @@ var (
 	StartStop = make(chan string)
 	// a lot of waiting data can come true so large buffer
 	DataPipe = make(chan []byte, 20)
+	CpuPipe  = make(chan float64, 1)
+	MemPipe  = make(chan float64, 1)
+	DiskPipe = make(chan float64, 1)
 )
 
 func ScreenDims() {
