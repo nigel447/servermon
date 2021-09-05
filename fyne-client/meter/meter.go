@@ -113,9 +113,9 @@ func (meter *MeterLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return minSize
 }
 
-func Show(meterSize fyne.Size) fyne.CanvasObject {
+func Show(meterSize fyne.Size, headerStr string) fyne.CanvasObject {
 	minSize = meterSize
-	meter := &MeterLayout{dataValf64: 20, header: "Cpu"}
+	meter := &MeterLayout{dataValf64: 20, header: headerStr}
 	meter.dataInput = make(chan float64, 10)
 	content := meter.render()
 	meter.value.Set("0")
