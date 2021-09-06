@@ -13,21 +13,19 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var Slot *fyne.Container
+//#region  vars
+var (
+	Slot                          *fyne.Container
+	Start, Stop                   *widget.Button
+	winFU                         fyne.Window
+	screenSize                    fyne.Size
+	valueCPU, valueMem, valueDisk binding.String
+	cpuText, memText, diskText    *widget.Label
+)
 
-var Start, Stop *widget.Button
+//#endregion
 
-var winFU fyne.Window
-var screenSize fyne.Size
-
-var valueCPU, valueMem, valueDisk binding.String
-
-var cpuText, memText, diskText *widget.Label
-
-func initSlot() {
-	Slot = container.New(layout.NewPaddedLayout(), layout.NewSpacer())
-}
-
+//#region updateSlot
 func updateSlot() {
 	valueCPU = binding.NewString()
 	valueMem = binding.NewString()
@@ -42,6 +40,9 @@ func updateSlot() {
 	Slot = container.New(layout.NewGridLayoutWithColumns(3), col1, col2, col3)
 }
 
+//#endregion
+
+//#region MainScreen
 func MainScreen(win fyne.Window, screenDims [2]int) {
 	winFU = win
 	screenSize = fyne.NewSize(float32(screenDims[0]), float32(screenDims[1]))
@@ -52,10 +53,12 @@ func MainScreen(win fyne.Window, screenDims [2]int) {
 	winFU.SetContent(content)
 }
 
+//#endregion
+
+//#region toggleStartStopImportance
 func toggleStartStopImportance(bType string) {
 	debug := &widget.Label{Alignment: fyne.TextAlignTrailing}
 	debug.TextStyle.Monospace = true
-
 	switch bType {
 	case "start":
 		Stop.Importance = widget.LowImportance
@@ -75,7 +78,6 @@ func toggleStartStopImportance(bType string) {
 			}
 
 		}()
-
 	case "stop":
 		debug.Text = "update slot for stop"
 		initSlot()
@@ -84,34 +86,34 @@ func toggleStartStopImportance(bType string) {
 		Stop.Importance = widget.HighImportance
 		StartStop <- "stop"
 	}
-
 	Start.Refresh()
 	Stop.Refresh()
-
 }
 
+//#endregion
+
+///#region MetricsDisplay
 func MetricsDisplay(data map[string]interface{}) {
 	dataType := data["type"]
-
-	fmt.Println("begin switch on type ", dataType)
-
+	// fmt.Println("begin switch on type ", dataType)
 	switch dataType {
 	case "cpu":
 		CpuPipe <- agregateCpuValue(data)
-		valueCPU.Set(fmt.Sprintf("user %s, sys %s, \nidle %s", data["user"], data["sys"], data["idle"]))
+		valueCPU.Set(fmt.Sprintf("idle %s", data["idle"]))
 	case "mem":
 		MemPipe <- agregateUsedMemValue(data)
-		valueMem.Set(fmt.Sprintf("total %s, used %s, \ncached %s, free %s",
-			data["totalMem"], data["usedMem"], data["cachedMem"], data["freeMem"]))
+		valueMem.Set(fmt.Sprintf("total %s, free %s", data["totalMem"], data["freeMem"]))
 	case "disk":
 		DiskPipe <- agregateDiskValue(data["data"].(map[string]interface{}))
 		sData := data["data"].(map[string]interface{}) // data here is raw json
-		valueDisk.Set(fmt.Sprintf("total %s, used %s, free %s, \nfs %s, pct %s, mt %s",
-			sData["total"], sData["used"], sData["free"], sData["fs"], sData["pct"], sData["mt"]))
+		valueDisk.Set(fmt.Sprintf("total %s, used %s, free %s, \nfs %s, mt %s",
+			sData["total"], sData["used"], sData["free"], sData["fs"], sData["mt"]))
 	}
-
 }
 
+//#endregion
+
+//#region agregateUsedXXXValue
 func agregateUsedMemValue(data map[string]interface{}) float64 {
 	tMem := data["totalMem"].(string)
 	totalMemStr := tMem[:len(tMem)-2]
@@ -125,8 +127,6 @@ func agregateUsedMemValue(data map[string]interface{}) float64 {
 	cachedMemStr := cMem[:len(cMem)-2]
 	cachedMem, err := strconv.ParseFloat(cachedMemStr, 64)
 	handleError(err)
-	// freeMem, err := strconv.ParseFloat(data["freeMem"].(string), 64)
-	// handleError(err)
 
 	return ((cachedMem + usedMem) / totalMem) * 100
 
@@ -138,8 +138,6 @@ func agregateCpuValue(data map[string]interface{}) float64 {
 	handleError(err)
 	sys, err := strconv.ParseFloat(data["sys"].(string), 64)
 	handleError(err)
-	// idle, err := strconv.ParseFloat(data["idle"].(string), 64)
-	// handleError(err)
 	return user + sys
 
 }
@@ -152,12 +150,22 @@ func agregateDiskValue(sData map[string]interface{}) float64 {
 
 }
 
+//#endregion
+
+//#region initSlot SetSlot
 func SetSlot() {
 	header := container.New(layout.NewPaddedLayout(), createHeaderButtons())
 	content := container.New(layout.NewVBoxLayout(), header, Slot)
 	winFU.SetContent(content)
 }
 
+func initSlot() {
+	Slot = container.New(layout.NewPaddedLayout(), layout.NewSpacer())
+}
+
+//#endregion
+
+//#region  createHeaderButtons
 func createHeaderButtons() *fyne.Container {
 	Start = widget.NewButton("   Start   ", func() {
 		fmt.Println("on start")
@@ -172,3 +180,5 @@ func createHeaderButtons() *fyne.Container {
 	return container.NewHBox(Start, layout.NewSpacer(), Stop, layout.NewSpacer())
 
 }
+
+//#endregion

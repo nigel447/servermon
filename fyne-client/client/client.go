@@ -15,12 +15,15 @@ import (
 	"fyne-client/gui"
 )
 
-var dataCount uint64
+var (
+	dataCount uint64
 
-// StartStop = make(chan [1]int)
+	Start = make(chan bool)
+)
+
 // DataPipe  = make(chan [1]string)
 
-func (cli *Client) BootStrapClient(ctx context.Context) {
+func (cli *Client) BootStrapClient(ctx context.Context) error {
 
 	cli.getClientConfig()
 	go func() {
@@ -30,7 +33,13 @@ func (cli *Client) BootStrapClient(ctx context.Context) {
 		os.Exit(1)
 	}()
 	conn, err := ssh.Dial("tcp", cli.Addr, cli.config)
-	handleError(err)
+	if err != nil {
+		fmt.Println("BootStrapClient ssh.Dial err != nil", err)
+		return errors.New("server-offline")
+	} else {
+		Start <- true
+	}
+
 	defer conn.Close()
 	channel, requests, err := conn.OpenChannel("rpc-remote", s("%s extra data", "init string"))
 	// handle start stop with channel
@@ -71,6 +80,8 @@ func (cli *Client) BootStrapClient(ctx context.Context) {
 		}
 	}(channel)
 	<-ctx.Done()
+
+	return nil
 }
 
 func verifyServer(hostname string, remote net.Addr, key ssh.PublicKey) error {

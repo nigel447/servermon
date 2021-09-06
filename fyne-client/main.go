@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"fyne-client/client"
+	sshCli "fyne-client/client"
 	"fyne-client/gui"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	bus = make(chan [2]string)
-
+	bus        = make(chan bool)
 	screenDims [2]int
 )
 
@@ -24,7 +23,7 @@ func main() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ctx, cancel := context.WithCancel(context.Background())
-	client := client.Client{Addr: config.Address}
+	client := sshCli.Client{Addr: config.Address}
 	fmt.Printf("calling bootstap on %s\n with ctrl^C shutdown\n", client.Addr)
 	go func() {
 		// recieve signal
@@ -36,27 +35,40 @@ func main() {
 
 	a := app.New()
 	w := a.NewWindow("Server Mon")
-	go func() {
-		gui.ScreenDims()
-	}()
 
-	go func(chan [2]string) {
+	go func(chan bool) {
 		for {
 			select {
-			case guiEvent := <-bus:
-				fmt.Printf("login event usr:%s pswd:%s\n", guiEvent[0], guiEvent[1])
-				w.Resize(fyne.NewSize(float32(screenDims[0]), float32(screenDims[1])))
-				gui.MainScreen(w, screenDims)
+			case boot := <-bus:
+				if boot {
+					w.Resize(fyne.NewSize(float32(screenDims[0]), float32(screenDims[1])))
+					gui.MainScreen(w, screenDims)
+				} else {
+					cancel()
+				}
 			case bootEvent := <-gui.Boot:
+				fmt.Println("bootEvent  ", bootEvent)
 				screenDims = bootEvent
-				fmt.Println(screenDims)
-				gui.LoginForm(w, screenDims, bus)
+				gui.BootDialog(w, screenDims, bus, true)
+			case <-sshCli.Start:
+				fmt.Println("case sshCli.Start")
+				go func() { gui.ScreenDims() }()
+
 			}
 		}
 	}(bus)
 
 	go func() {
-		client.BootStrapClient(ctx)
+		err := client.BootStrapClient(ctx)
+		if err != nil {
+			fmt.Println("BootStrapClient err != nil ", err)
+			var a [2]int
+			a[0] = 800
+			a[1] = 600
+			gui.BootDialog(w, a, bus, false)
+			// run login screen as dialog message serveroffline
+			//gui.BootDialog(w, screenDims, bus, false)
+		}
 	}()
 
 	w.ShowAndRun()
