@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
@@ -12,23 +13,11 @@ func TestRunScheduler(t *testing.T) {
 	<-done
 }
 
-func TestChannel(t *testing.T) {
-	done := make(chan bool)
-	dataChannel := make(chan ProfileData)
+func TestServerData(t *testing.T) {
+	data := GetServerSysData()
+	fmt.Println(data)
+	respBytes, err := json.Marshal(data)
+	handleError(err)
+	fmt.Println(string(respBytes))
 
-	go func() {
-		for {
-			select {
-			case data := <-dataChannel:
-				fmt.Println("received data", data)
-
-			}
-		}
-	}()
-
-	data := ProfileData{}
-	dataChannel <- data
-	dataChannel <- data
-
-	<-done
 }

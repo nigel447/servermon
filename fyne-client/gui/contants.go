@@ -35,6 +35,13 @@ type (
 		MemPoint  MemRangeData    `json:"mem"`
 		DiskPoint []DiskFreeSpace `json:"disk"`
 	}
+	// https://github.com/mitchellh/mapstructure
+	RBoxInfo struct {
+		Kernel   string `mapstructure:"kernel" json:"kernel"`
+		KVersion string `mapstructure:"version" json:"kernel"`
+		Arch     string `mapstructure:"arch" json:"kernel"`
+		OS       string `mapstructure:"os" json:"kernel"`
+	}
 )
 
 var (
@@ -42,15 +49,16 @@ var (
 	StartStop = make(chan string)
 	// a lot of waiting data can come true so large buffer
 	DataPipe = make(chan []byte, 20)
-	CpuPipe  = make(chan float64, 1)
-	MemPipe  = make(chan float64, 1)
-	DiskPipe = make(chan float64, 1)
+	BootPipe = make(chan []byte, 1)
+	CpuPipe  = make(chan float64, 10)
+	MemPipe  = make(chan float64, 10)
+	DiskPipe = make(chan float64, 10)
 )
 
 func ScreenDims() {
 	driver.Main(func(s screen.Screen) {
 		wS, _ := s.NewWindow(&screen.NewWindowOptions{
-			Title: "Basic Shiny Example",
+			Title: "GoLang Server system metrics",
 		})
 
 		for {

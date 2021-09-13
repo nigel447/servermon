@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"os"
@@ -66,13 +67,25 @@ func (srv *Server) BootStrapServer(ctx context.Context) {
 					b := buff[:n]
 					fmt.Println("incomming channel mssg ", string(b))
 					if string(b) == "start" {
+						fmt.Println("server cmmd start  send profiling data")
 						// start profiling
 						RunProfiler()
 					}
 
 					if string(b) == "stop" {
+						fmt.Println("server cmmd stop  cancel scheduling data")
 						// stop profiling
 						StopProfiler()
+					}
+
+					if string(b) == "onBoot" {
+						// onBoot
+						fmt.Println("server cmmd client onBoot send sys info data")
+						data := GetServerSysData()
+						fmt.Println(" sys info data: ", data)
+						respBytes, err := json.Marshal(data)
+						handleError(err)
+						channel.Write(respBytes)
 					}
 
 				}

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"fyne-client/dcrypto"
@@ -46,14 +47,18 @@ func (cli *Client) BootStrapClient(ctx context.Context) error {
 	go func(channel ssh.Channel) {
 		go ssh.DiscardRequests(requests)
 		for {
-			// should blocak and wait
+			// should block and wait
 			startDataPipe := <-gui.StartStop
 			if startDataPipe == "start" {
-				fmt.Println("BootStrapClient opening data channel")
+				fmt.Println("BootStrapClient start metrics data scheduler over channel")
 				_, err := channel.Write(s("start"))
 				handleError(err)
+			} else if startDataPipe == "onBoot" {
+				fmt.Println("BootStrapClient requesting boot data over channel")
+				_, err := channel.Write(s("onBoot"))
+				handleError(err)
 			} else {
-				fmt.Println("BootStrapClient closing data channel")
+				fmt.Println("BootStrapClient stop metrics data scheduler over channel")
 				_, err = channel.Write(s("stop"))
 				handleError(err)
 			}
@@ -71,10 +76,18 @@ func (cli *Client) BootStrapClient(ctx context.Context) error {
 			b := buff[:n]
 			fmt.Println("data coming in")
 			fmt.Println(string(b))
-			// should block and wait for data
-			gui.DataPipe <- b
-			fmt.Println("recieved data count ", dataCount)
-			atomic.AddUint64(&dataCount, 1)
+			// fan out here
+			var sdata map[string]interface{}
+			err = json.Unmarshal(b, &sdata)
+			handleError(err)
+			sDataType := sdata["type"].(string)
+			if sDataType == "sys" {
+				gui.BootPipe <- b
+			} else {
+				gui.DataPipe <- b
+				fmt.Println("recieved data count ", dataCount)
+				atomic.AddUint64(&dataCount, 1)
+			}
 			time.Sleep(200 * time.Millisecond)
 
 		}

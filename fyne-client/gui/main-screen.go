@@ -3,10 +3,13 @@ package gui
 import (
 	"encoding/json"
 	"fmt"
-	"fyne-client/meter"
+	"image/color"
 	"strconv"
 
+	"fyne-client/meter"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
@@ -46,7 +49,7 @@ func updateSlot() {
 func MainScreen(win fyne.Window, screenDims [2]int) {
 	winFU = win
 	screenSize = fyne.NewSize(float32(screenDims[0]), float32(screenDims[1]))
-	initSlot()
+	initBootSlot()
 	header := container.New(layout.NewPaddedLayout(), createHeaderButtons())
 	mainScreen := container.New(layout.NewPaddedLayout(), Slot)
 	content := container.New(layout.NewVBoxLayout(), header, mainScreen)
@@ -63,7 +66,16 @@ func toggleStartStopImportance(bType string) {
 	case "start":
 		Stop.Importance = widget.LowImportance
 		Start.Importance = widget.HighImportance
+		go func() {
+			if len(DataPipe) > 1 {
+				for bytes := range DataPipe {
+					fmt.Println("drain DataPipe channel dry", bytes)
+				}
+			}
+		}()
+
 		StartStop <- "start"
+
 		updateSlot()
 		SetSlot()
 		go func() {
@@ -80,7 +92,6 @@ func toggleStartStopImportance(bType string) {
 		}()
 	case "stop":
 		debug.Text = "update slot for stop"
-		initSlot()
 		SetSlot()
 		Start.Importance = widget.LowImportance
 		Stop.Importance = widget.HighImportance
@@ -152,15 +163,60 @@ func agregateDiskValue(sData map[string]interface{}) float64 {
 
 //#endregion
 
-//#region initSlot SetSlot
+//#region SetSlot
 func SetSlot() {
 	header := container.New(layout.NewPaddedLayout(), createHeaderButtons())
+
 	content := container.New(layout.NewVBoxLayout(), header, Slot)
+	Slot.Resize(Slot.MinSize().Max(fyne.NewSize(400, 600)))
+	content.Resize(Slot.MinSize().Max(fyne.NewSize(500, 700)))
+	content.Refresh()
 	winFU.SetContent(content)
 }
 
-func initSlot() {
-	Slot = container.New(layout.NewPaddedLayout(), layout.NewSpacer())
+func initBootSlot() {
+
+	StartStop <- "onBoot"
+
+	go func() {
+		sysData := <-BootPipe
+		var sdata map[string]interface{}
+		err := json.Unmarshal(sysData, &sdata)
+		handleError(err)
+		headerText := canvas.NewText("  Remote Server Type",
+			&color.NRGBA{R: 0xfa, A: 0xff})
+		// keys
+		kernelTextL := canvas.NewText("  Kernel", &color.NRGBA{G: 0xfa, A: 0x99})
+		versionTextL := canvas.NewText("  Version", &color.NRGBA{G: 0xfa, A: 0x99})
+		archTextL := canvas.NewText("  Architecture", &color.NRGBA{G: 0xfa, A: 0x99})
+		osTextL := canvas.NewText("  OS", &color.NRGBA{G: 0xfa, A: 0x99})
+		// vals
+		kernelText := canvas.NewText(sdata["kernel"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
+		versionText := canvas.NewText(sdata["version"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
+		archText := canvas.NewText(sdata["arch"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
+		osText := canvas.NewText(sdata["os"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
+
+		topLevelLayOutContent := container.New(layout.NewVBoxLayout(),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(1), layout.NewSpacer())),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(3), layout.NewSpacer(), headerText, layout.NewSpacer())),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(1), layout.NewSpacer())),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(2), kernelTextL, kernelText)),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(2), versionTextL, versionText)),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(2), archTextL, archText)),
+			container.New(layout.NewMaxLayout(),
+				container.New(layout.NewGridLayoutWithColumns(2), osTextL, osText)),
+		)
+
+		Slot = container.New(layout.NewPaddedLayout(), layout.NewSpacer(), topLevelLayOutContent)
+		SetSlot()
+	}()
+	Slot = container.New(layout.NewVBoxLayout(), layout.NewSpacer())
 }
 
 //#endregion
