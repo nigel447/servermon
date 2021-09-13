@@ -82,9 +82,9 @@ func (cli *Client) BootStrapClient(ctx context.Context) error {
 			handleError(err)
 			sDataType := sdata["type"].(string)
 			if sDataType == "sys" {
-				gui.BootPipe <- b
+				gui.BootPipe <- sdata
 			} else {
-				gui.DataPipe <- b
+				gui.DataPipe <- sdata
 				fmt.Println("recieved data count ", dataCount)
 				atomic.AddUint64(&dataCount, 1)
 			}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	sshCli "fyne-client/client"
 	"fyne-client/gui"
+	"fyne-client/icon"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 
@@ -33,7 +35,9 @@ func main() {
 
 	}()
 
-	a := app.New()
+	a := app.New() // icon
+	a.SetIcon(icon.Metericon)
+
 	w := a.NewWindow("Server Mon")
 
 	go func(chan bool) {

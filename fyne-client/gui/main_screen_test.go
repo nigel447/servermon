@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/mitchellh/mapstructure"
+	// "github.com/mitchellh/mapstructure"
 	"github.com/zcalusic/sysinfo"
 	"os"
 	"os/exec"
@@ -48,20 +48,5 @@ func TestOsInfo(t *testing.T) {
 	for i, v := range strings.Split(out.String(), " ") {
 		fmt.Println("", i, v)
 	}
-
-	ret := strings.Split(out.String(), " ")
-
-	input := map[string]interface{}{
-		"kernel":  ret[0],
-		"version": ret[1],
-		"arch":    ret[2],
-		"os":      ret[3],
-	}
-
-	var result RBoxInfo
-	err = mapstructure.Decode(input, &result)
-	handleError(err)
-
-	fmt.Printf("%#v", result)
 
 }

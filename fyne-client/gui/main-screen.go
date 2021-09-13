@@ -1,13 +1,12 @@
 package gui
 
 import (
-	"encoding/json"
 	"fmt"
-	"image/color"
+
 	"strconv"
 
+	"fyne-client/icon"
 	"fyne-client/meter"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -18,8 +17,8 @@ import (
 
 //#region  vars
 var (
-	Slot                          *fyne.Container
-	Start, Stop                   *widget.Button
+	Slot *fyne.Container
+	// Start, Stop                   *widget.Button
 	winFU                         fyne.Window
 	screenSize                    fyne.Size
 	valueCPU, valueMem, valueDisk binding.String
@@ -64,12 +63,12 @@ func toggleStartStopImportance(bType string) {
 	debug.TextStyle.Monospace = true
 	switch bType {
 	case "start":
-		Stop.Importance = widget.LowImportance
-		Start.Importance = widget.HighImportance
+		// Stop.Importance = widget.LowImportance
+		// Start.Importance = widget.HighImportance
 		go func() {
 			if len(DataPipe) > 1 {
-				for bytes := range DataPipe {
-					fmt.Println("drain DataPipe channel dry", bytes)
+				for maps := range DataPipe {
+					fmt.Println("drain DataPipe channel dry", maps)
 				}
 			}
 		}()
@@ -79,26 +78,23 @@ func toggleStartStopImportance(bType string) {
 		updateSlot()
 		SetSlot()
 		go func() {
-			//var pdata ProfileData
-			var pdata map[string]interface{}
+
 			for {
 				// should block until data
 				inputData := <-DataPipe
-				err := json.Unmarshal(inputData, &pdata)
-				handleError(err)
-				MetricsDisplay(pdata)
+				MetricsDisplay(inputData)
 			}
 
 		}()
 	case "stop":
 		debug.Text = "update slot for stop"
 		SetSlot()
-		Start.Importance = widget.LowImportance
-		Stop.Importance = widget.HighImportance
+		// Start.Importance = widget.LowImportance
+		// Stop.Importance = widget.HighImportance
 		StartStop <- "stop"
 	}
-	Start.Refresh()
-	Stop.Refresh()
+	// Start.Refresh()
+	// Stop.Refresh()
 }
 
 //#endregion
@@ -165,12 +161,9 @@ func agregateDiskValue(sData map[string]interface{}) float64 {
 
 //#region SetSlot
 func SetSlot() {
-	header := container.New(layout.NewPaddedLayout(), createHeaderButtons())
-
-	content := container.New(layout.NewVBoxLayout(), header, Slot)
-	Slot.Resize(Slot.MinSize().Max(fyne.NewSize(400, 600)))
-	content.Resize(Slot.MinSize().Max(fyne.NewSize(500, 700)))
-	content.Refresh()
+	header := createHeaderButtons()
+	content := container.New(layout.NewVBoxLayout(),
+		header, layout.NewSpacer(), Slot, layout.NewSpacer())
 	winFU.SetContent(content)
 }
 
@@ -180,21 +173,27 @@ func initBootSlot() {
 
 	go func() {
 		sysData := <-BootPipe
-		var sdata map[string]interface{}
-		err := json.Unmarshal(sysData, &sdata)
-		handleError(err)
-		headerText := canvas.NewText("  Remote Server Type",
-			&color.NRGBA{R: 0xfa, A: 0xff})
+		headerText := canvas.NewText("  Remote Server", HardRedType)
+
+		headerText.TextSize = HeaderFontSize
 		// keys
-		kernelTextL := canvas.NewText("  Kernel", &color.NRGBA{G: 0xfa, A: 0x99})
-		versionTextL := canvas.NewText("  Version", &color.NRGBA{G: 0xfa, A: 0x99})
-		archTextL := canvas.NewText("  Architecture", &color.NRGBA{G: 0xfa, A: 0x99})
-		osTextL := canvas.NewText("  OS", &color.NRGBA{G: 0xfa, A: 0x99})
+		kernelTextL := canvas.NewText("  Kernel", SoftGreenType)
+		kernelTextL.TextSize = TextFontSize
+		versionTextL := canvas.NewText("  Version", SoftGreenType)
+		versionTextL.TextSize = TextFontSize
+		archTextL := canvas.NewText("  Architecture", SoftGreenType)
+		archTextL.TextSize = TextFontSize
+		osTextL := canvas.NewText("  OS", SoftGreenType)
+		osTextL.TextSize = TextFontSize
 		// vals
-		kernelText := canvas.NewText(sdata["kernel"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
-		versionText := canvas.NewText(sdata["version"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
-		archText := canvas.NewText(sdata["arch"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
-		osText := canvas.NewText(sdata["os"].(string), &color.NRGBA{0xff, 0xc1, 0x07, 0xff})
+		kernelText := canvas.NewText(sysData["kernel"].(string), GoldType)
+		kernelText.TextSize = TextFontSize
+		versionText := canvas.NewText(sysData["version"].(string), GoldType)
+		versionText.TextSize = TextFontSize
+		archText := canvas.NewText(sysData["arch"].(string), GoldType)
+		archText.TextSize = TextFontSize
+		osText := canvas.NewText(sysData["os"].(string), GoldType)
+		osText.TextSize = TextFontSize
 
 		topLevelLayOutContent := container.New(layout.NewVBoxLayout(),
 			container.New(layout.NewMaxLayout(),
@@ -223,18 +222,18 @@ func initBootSlot() {
 
 //#region  createHeaderButtons
 func createHeaderButtons() *fyne.Container {
-	Start = widget.NewButton("   Start   ", func() {
-		fmt.Println("on start")
-		toggleStartStopImportance("start")
 
+	startButton := NewImageButton(icon.Starticon, func() {
+		toggleStartStopImportance("start")
 	})
-	Stop = widget.NewButton("   Stop   ", func() {
-		fmt.Println("on stop")
+	stopButton := NewImageButton(icon.Stopicon, func() {
 		toggleStartStopImportance("stop")
 	})
 
-	return container.NewHBox(Start, layout.NewSpacer(), Stop, layout.NewSpacer())
-
+	ret := container.New(layout.NewGridLayoutWithColumns(4),
+		startButton, layout.NewSpacer(), layout.NewSpacer(), stopButton)
+	ret.Resize(fyne.NewSize(float32(600), float32(80)))
+	return ret
 }
 
 //#endregion

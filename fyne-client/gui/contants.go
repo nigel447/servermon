@@ -1,7 +1,14 @@
 package gui
 
+// https://github.com/mitchellh/mapstructure
 import (
+	"image/color"
+
 	"fmt"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/widget"
 	"golang.org/x/exp/shiny/driver"
 	"golang.org/x/exp/shiny/screen"
 	"golang.org/x/mobile/event/size"
@@ -35,12 +42,10 @@ type (
 		MemPoint  MemRangeData    `json:"mem"`
 		DiskPoint []DiskFreeSpace `json:"disk"`
 	}
-	// https://github.com/mitchellh/mapstructure
-	RBoxInfo struct {
-		Kernel   string `mapstructure:"kernel" json:"kernel"`
-		KVersion string `mapstructure:"version" json:"kernel"`
-		Arch     string `mapstructure:"arch" json:"kernel"`
-		OS       string `mapstructure:"os" json:"kernel"`
+	EventHandler func()
+	ImageButton  struct {
+		widget.Card
+		Handler EventHandler
 	}
 )
 
@@ -48,12 +53,38 @@ var (
 	Boot      = make(chan [2]int)
 	StartStop = make(chan string)
 	// a lot of waiting data can come true so large buffer
-	DataPipe = make(chan []byte, 20)
-	BootPipe = make(chan []byte, 1)
+	DataPipe = make(chan map[string]interface{}, 20)
+	BootPipe = make(chan map[string]interface{}, 1)
 	CpuPipe  = make(chan float64, 10)
 	MemPipe  = make(chan float64, 10)
 	DiskPipe = make(chan float64, 10)
+
+	HardRedType   = &color.NRGBA{R: 0xfa, A: 0xff}
+	SoftGreenType = &color.NRGBA{G: 0xfa, A: 0x99}
+	GoldType      = &color.NRGBA{0xff, 0xc1, 0x07, 0xff}
+
+	// purple = &color.NRGBA{R: 128, G: 0, B: 128, A: 255}
+	// orange = &color.NRGBA{R: 198, G: 123, B: 0, A: 255}
+	// grey   = &color.Gray{Y: 123}
+
+	HeaderFontSize = float32(24)
+	TextFontSize   = float32(18)
 )
+
+func NewImageButton(res fyne.Resource, f EventHandler) *ImageButton {
+	card := &ImageButton{Handler: f}
+	card.ExtendBaseWidget(card)
+	card.SetImage(canvas.NewImageFromResource(res))
+
+	return card
+}
+
+func (t *ImageButton) Tapped(_ *fyne.PointEvent) {
+	t.Handler()
+}
+
+func (t *ImageButton) TappedSecondary(_ *fyne.PointEvent) {
+}
 
 func ScreenDims() {
 	driver.Main(func(s screen.Screen) {
