@@ -14,5 +14,5 @@ Remote Output
 <img src="https://github.com/nigel447/servermon/blob/master/remote_smon.gif" width="400">  
 
 Above test on a Oracle Cloud VM with single core of a [Ampere A1](https://www.oracle.com/cloud/compute/arm/) CPU.  
-Simple golang code uses a tiny fraction << 1% of the single core cpu,and approx 300kb of system memory.   
+Simple golang code uses a tiny fraction << 1% of the single core cpu, and approx 300kb of system memory.   
 Desktop client with [fyne](https://github.com/fyne-io/fyne)
